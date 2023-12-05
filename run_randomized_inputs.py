@@ -2,16 +2,34 @@ import pyPanSim as sp
 import numpy as np
 import random
 import os
+from datetime import datetime
+import csv
 
-def get_results(resultArray):  #TODO
-  return 0
+def get_results(resultArray):
+  nHospitalied = []
+  for result in resultArray:
+    hosp = 0.1*result[6] + 0.1*result[7]  # hospitalized people + more severe hospitalied people
+    nHospitalied.append(hosp)
+  return nHospitalied
 
 def get_rnd_runoptions(input_sets):
   rnd = random.randint(0, 17)
-  return input_sets[rnd]
+  return rnd, input_sets[rnd]
+
+def write_single(results, filename):  # writer in case of Single Input or Single Output cases
+  with open(filename, 'w') as myfile:
+    writer = csv.writer(myfile)
+    for result in results:
+      writer.writerow([result])
+
+# Datafolder structure
+now = datetime.now()
+strNow = now.strftime("%Y_%m_%d_%H%M%S")
+strFolder = "SimData/Randomized_inputs_" + strNow
+   
 
 simulator = sp.SimulatorInterface()
-init_options = ['panSim', '-r', ' ', '--diags', '2', '--quarantinePolicy', '0', '-k', '0.00041',
+init_options = ['panSim', '-r', ' ', '--quarantinePolicy', '0', '-k', '0.00041',
                 '--progression', 'inputConfigFiles/progressions_Jun17_tune/transition_config.json',
                 '-A', 'inputConfigFiles/agentTypes_3.json',
                 '-a', 'inputRealExample/agents1.json',
@@ -31,21 +49,37 @@ input_sets = [["TPdef", "PLNONE", "CFNONE", "SONONE", "QU0", "MA1.0"], ["TPdef",
 
 # initial run options
 run_options = input_sets[0]
+input_idx = 0
 
 CONSTANT_PERIOD = 7  # run every input for 7 days
+ENDTIME = 250  # days
 
 results_agg = []
+inputs_agg = []
 day_counter = 0
-for i in range(0,140):
+for i in range(0, ENDTIME):
     results = simulator.runForDay(run_options)
     day_counter += 1
     if day_counter == CONSTANT_PERIOD:
-       run_options = get_rnd_runoptions(input_sets)
+       input_idx, run_options = get_rnd_runoptions(input_sets)
        day_counter = 0
     results_agg.append(results)
+    inputs_agg.append(input_idx)
 
 
 print("Simulation finished...")
 
-#TODO
-# print(f"Results saved into {filename}")
+nHospitalized = get_results(inputs_agg)
+
+# Saving the results
+currentDir = os.getcwd()
+#path = os.path.join(currentDir, )
+os.mkdir(strFolder)
+
+strInputPath = os.path.join(strFolder, "input.csv")
+strOutputPath = os.path.join(strFolder, "output.csv")
+
+write_single(inputs_agg, strInputPath)
+write_single(nHospitalized, strOutputPath)
+
+print(f"Results saved into {strFolder} directory.")
