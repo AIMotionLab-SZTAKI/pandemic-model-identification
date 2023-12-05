@@ -29,7 +29,7 @@ strFolder = "SimData/Randomized_inputs_" + strNow
    
 
 simulator = sp.SimulatorInterface()
-init_options = ['panSim', '-r', ' ', '--quarantinePolicy', '0', '-k', '0.00041',
+init_options = ['panSim', '-r', ' ', '--diags', '0', '--quarantinePolicy', '0', '-k', '0.00041',
                 '--progression', 'inputConfigFiles/progressions_Jun17_tune/transition_config.json',
                 '-A', 'inputConfigFiles/agentTypes_3.json',
                 '-a', 'inputRealExample/agents1.json',
@@ -69,7 +69,7 @@ for i in range(0, ENDTIME):
 
 print("Simulation finished...")
 
-nHospitalized = get_results(inputs_agg)
+nHospitalized = get_results(results_agg)
 
 # Saving the results
 currentDir = os.getcwd()
