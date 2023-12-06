@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 
 # Hyperparameters
 T = 50
-epochs = 10
+epochs = 100
 batch_size = 256
 hl_enc = 2
 n_nodes_enc = 64
@@ -22,11 +22,14 @@ ny = 1
 learning_rate = 1e-3
 
 # Data concatenation:
-DataFolderName = "SimData"
+TrainDataFolderName = "SimData/Train"
+TestDataFolderName = "SimData/Test"
 CurrDir = os.getcwd()
-data_folders = os.path.join(CurrDir, DataFolderName)
-sysdata = create_sysdata_from_file(data_folders)
+train_data_folders = os.path.join(CurrDir, TrainDataFolderName)
+test_data_folders = os.path.join(CurrDir, TestDataFolderName)
+sysdata = create_sysdata_from_file(train_data_folders)
 
+testdata = create_sysdata_from_file(test_data_folders)
 train, valid = sysdata.train_test_split(split_fraction=0.2)
 
 # Initialization:
@@ -65,12 +68,15 @@ plt.show()
 
 # Testing:
 fitsys.checkpoint_load_system(name='_last')
-test_sim_encoder_valid = fitsys.apply_experiment(valid, save_state=False)
+valid_results = fitsys.apply_experiment(valid, save_state=False)
+test_results = fitsys.apply_experiment(testdata, save_state=False)
 
-RMS_valid = test_sim_encoder_valid.RMS(valid)
-NRMS_valid = test_sim_encoder_valid.NRMS(valid)
-print(f'RMS Valid simulation SS encoder {RMS_valid:.2}')
-print(f'NRMS Valid simulation SS encoder {NRMS_valid:.2%}')
+RMS_valid = valid_results.RMS(valid)
+NRMS_valid = valid_results.NRMS(valid)
+RMS_test = test_results.RMS(testdata)
+NRMS_test = test_results.NRMS(testdata)
+print(f'Validation NRMS error: {NRMS_valid:.2%}')
+print(f'Test NRMS error: {NRMS_test:.2%}')
 
 # Saving:
 encoder_data = {
@@ -86,8 +92,8 @@ encoder_data = {
     "ny": ny,
     "nu": nu,
     "nx": nx,
-#    "Test RMS": RMS_test,
-#    "Test NRMS": NRMS_test,
+    "Test RMS": RMS_test,
+    "Test NRMS": NRMS_test,
     "Valid RMS": RMS_valid,
     "Valid NRMS": NRMS_valid
 }

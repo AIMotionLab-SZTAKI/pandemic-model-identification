@@ -1,5 +1,7 @@
 import deepSI
 import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
 import pickle
@@ -80,3 +82,19 @@ def save_encoder(fit_sys, encoder_data, fig_losses):
             f.write('%s: %s\n' % (key, value))
 
     print("---------- Encoder saved ----------")
+
+def plot_SISO_results(sim_results, test_data, blockfig=False):
+    fig, axs = plt.subplots(2, 1, sharex=True)
+    axs[0].plot(test_data.u)
+    axs[0].set_ylabel('Input')
+
+    axs[1].plot(test_data.y, label="PanSim")
+    axs[1].plot(sim_results.y, label="SUBNET")
+    axs[1].set_xlabel('Sim. index')
+    axs[1].set_ylabel('Hospitalized people')
+    axs[1].legend()
+
+    fig.tight_layout()
+    plt.show(block=blockfig)
+
+
