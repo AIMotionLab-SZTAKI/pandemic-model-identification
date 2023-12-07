@@ -7,8 +7,8 @@ from matplotlib import pyplot as plt
 # Hyperparameters
 T = 50
 epochs = 100
-batch_size = 256
-hl_enc = 2
+batch_size = 512
+hl_enc = 3
 n_nodes_enc = 64
 hl_din = 2
 n_nodes_din = 64
@@ -24,13 +24,15 @@ learning_rate = 1e-3
 # Data concatenation:
 TrainDataFolderName = "SimData/Train"
 TestDataFolderName = "SimData/Test"
+ValidDataFolderName = "SimData/Valid"
 CurrDir = os.getcwd()
 train_data_folders = os.path.join(CurrDir, TrainDataFolderName)
+valid_data_folders = os.path.join(CurrDir, ValidDataFolderName)
 test_data_folders = os.path.join(CurrDir, TestDataFolderName)
-sysdata = create_sysdata_from_file(train_data_folders)
 
+train = create_sysdata_from_file(train_data_folders)
+valid = create_sysdata_from_file(valid_data_folders)
 testdata = create_sysdata_from_file(test_data_folders)
-train, valid = sysdata.train_test_split(split_fraction=0.2)
 
 # Initialization:
 e_net = deepSI.fit_systems.encoders.default_encoder_net
@@ -44,7 +46,7 @@ fitsys = deepSI.fit_systems.SS_encoder_general(nx=nx, na=na, nb=nb, e_net=e_net,
 
 # Training:
 fitsys.fit(train_sys_data=train, val_sys_data=valid, epochs=epochs, batch_size=batch_size, loss_kwargs=dict(nf=T),
-           auto_fit_norm=True, optimizer_kwargs=dict(lr=learning_rate))  # validation_measure='20-step-NRMS')
+           auto_fit_norm=True, optimizer_kwargs=dict(lr=learning_rate), validation_measure='30-step-NRMS')  #ToDo: ask for prediction hotizon
 
 # Training losses
 fitsys.checkpoint_load_system(name='_last')
@@ -67,7 +69,7 @@ fig_losses.tight_layout()
 plt.show()
 
 # Testing:
-fitsys.checkpoint_load_system(name='_last')
+fitsys.checkpoint_load_system(name='_best')
 valid_results = fitsys.apply_experiment(valid, save_state=False)
 test_results = fitsys.apply_experiment(testdata, save_state=False)
 

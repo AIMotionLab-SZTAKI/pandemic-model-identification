@@ -1,10 +1,10 @@
 import deepSI
 import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
 import pickle
+import random
 
 def csv_read(folder, path_parts=[]):
     """
@@ -96,5 +96,85 @@ def plot_SISO_results(sim_results, test_data, blockfig=False):
 
     fig.tight_layout()
     plt.show(block=blockfig)
+
+def split_list(inputs, outputs, nf, T, split_fraction):
+    """
+    Splits a list(two) randomly in between and extract the remaining parts.
+
+    Arguments:
+        - inputs (list): input time-series data
+        - outputs (list): output time-series data
+        - nf (float): the number of steps the encoder must calculate from the past
+        - T-truncation time (float): the number of steps the encoder must predict to the future
+        - split_fraction (float): the ratio to split the data (for 0.2 the validation will be 20% and the training is the remaining 80%)
+    Returns:
+        - train_data_in1 (list): first half of the input training data
+        - train_data_in2 (list): second half of the input training data
+        - valid_data_in (list): input validation data between the first and second training data
+        - train_data_out1 (list): first half of the output training data
+        - train_data_out2 (list): second half of the output training data
+        - valid_data_out (list): output validation data between the first and second training data
+    """
+
+    split_index = random.randint(nf+T, int(len(inputs)*(1-split_fraction)-(nf+T)))
+
+    valid_data_in = inputs[split_index:split_index + int(len(inputs) * split_fraction)]
+    train_data_in1 = inputs[:split_index]
+    train_data_in2 = inputs[split_index + int(len(inputs) * split_fraction):]
+
+    valid_data_out = outputs[split_index:split_index + int(len(outputs) * split_fraction)]
+    train_data_out1 = outputs[:split_index]
+    train_data_out2 = outputs[split_index + int(len(outputs) * split_fraction):]
+
+    return train_data_in1, train_data_in2, valid_data_in, train_data_out1, train_data_out2, valid_data_out
+
+def create_random_train_test_split(data_folders, n_lag, T, split_fraction = 0.2):
+    """
+    Creates random training and validation data from time-series data.
+
+    Arguments:
+        - data_folders (string): path direction of the time-series data file
+        - nf (float): the number of steps the encoder must calculate from the past
+        - T-truncation time (float): the number of steps the encoder must predict to the future
+        - split_fraction (float): the ratio to split the data (for 0.2 the validation will be 20% and the training is the remaining 80%)
+    Returns:
+        - train_data (deepSI.system_data): training data
+        - valid_data (deepSI.system_data): validation data
+    """
+
+    input_train_data = []
+    input_valid_data = []
+    output_train_data = []
+    output_valid_data = []
+
+    data_names_list = os.listdir(data_folders)
+    for name in data_names_list:
+        folder = os.path.join(data_folders, name)
+        inputs = csv_read(folder, ['input.csv'])
+        outputs = csv_read(folder, ['output.csv'])
+
+        train_data_in1, train_data_in2, valid_data_in, train_data_out1, train_data_out2, valid_data_out = split_list(inputs, outputs, nf=n_lag, T=T, split_fraction=split_fraction)
+
+        input_train_data.append(train_data_in1)
+        input_train_data.append(train_data_in2)
+        output_train_data.append(train_data_out1)
+        output_train_data.append(train_data_out2)
+        input_valid_data.append(valid_data_in)
+        output_valid_data.append(valid_data_out)
+
+    train_data_list = []
+    valid_data_list = []
+    for input1, output1 in zip(input_train_data, output_train_data):
+            sys_data_part_train = deepSI.System_data(u=input1, y=output1)
+            train_data_list.append(sys_data_part_train)
+
+    for input2, output2 in zip(input_valid_data, output_valid_data):
+            sys_data_part_valid = deepSI.System_data(u=input2, y=output2)
+            valid_data_list.append(sys_data_part_valid)
+
+    train_data = deepSI.System_data_list(sys_data_list=train_data_list)
+    valid_data = deepSI.System_data_list(sys_data_list=valid_data_list)
+
+    return train_data, valid_data
 
 
