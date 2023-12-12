@@ -7,7 +7,7 @@ def csv_read(file):
         data = np.genfromtxt(myfile, delimiter=',')
     return data
 
-folder_name = "SimData/Randomized_inputs_2023_12_05_130420"
+folder_name = "SimData/Moderate"
 
 input = csv_read(folder_name + "/input.csv")
 output = csv_read(folder_name + "/output.csv")
@@ -16,7 +16,7 @@ plt.figure()
 plt.plot(output)
 plt.xlabel("Days")
 plt.ylabel("Hospitalized people")
-plt.show()
+plt.show(block=False)
 
 plt.figure()
 plt.bar(*np.unique(input, return_counts=True))
