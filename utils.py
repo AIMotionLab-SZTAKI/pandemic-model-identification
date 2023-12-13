@@ -5,6 +5,7 @@ import numpy as np
 from datetime import datetime
 import pickle
 import random
+import csv
 
 def csv_read(folder, path_parts=[]):
     """
@@ -24,7 +25,32 @@ def csv_read(folder, path_parts=[]):
         data = np.genfromtxt(in_file, delimiter=",")
     return data
 
-def create_sysdata_from_file(data_folders):
+def csv_write(data, folder, path_parts=[], timeseries=False):
+    """
+    Writes the data into a .csv file.
+
+    Arguments:
+        - data (list): data
+        - folder (string): path of the saving
+        - path_parts (string): extra paths in the folder
+        - timeseries (bool): save the data as a time-series or not
+    Returns: -
+    """
+
+    for part in path_parts:
+        folder = os.path.join(folder, part)
+
+    if not os.path.exists(os.path.dirname(folder)):
+        os.makedirs(os.path.dirname(folder))
+
+    with open(folder, 'w', newline='') as out_file:
+        if timeseries:
+            writer = csv.writer(out_file)
+            writer.writerows(data)
+        else:
+            np.savetxt(out_file, data, delimiter=",")
+
+def create_sysdata_from_file(data_folders, Nu=1, out="normal"):
     """
     Creates system (deepSI) data from time-series data.
 
@@ -34,13 +60,25 @@ def create_sysdata_from_file(data_folders):
         - system_data (deepSI.system_data): training data
     """
 
+    if (Nu == 1) and (out == "normal"):
+        input_filename = 'input.csv'
+        output_filename = 'output.csv'
+    elif (Nu == 1) and (out != "normal"):
+        input_filename = 'inputTrimmed.csv'
+        output_filename = 'outputTrimmed.csv'
+    elif (Nu != 1) and (out == "normal"):
+        input_filename = 'inputMulti.csv'
+        output_filename = 'output.csv'
+    else:
+        input_filename = 'inputMultiTrimmed.csv'
+        output_filename = 'outputTrimmed.csv'
     input_data = []
     output_data = []
     data_names_list = os.listdir(data_folders)
     for name in data_names_list:
         folder = os.path.join(data_folders, name)
-        input_data.append(csv_read(folder, ['input.csv']))
-        output_data.append(csv_read(folder, ['output.csv']))
+        input_data.append(csv_read(folder, [input_filename]))
+        output_data.append(csv_read(folder, [output_filename]))
 
     sys_data_list = []
     for input, output in zip(input_data, output_data):
@@ -176,5 +214,66 @@ def create_random_train_test_split(data_folders, n_lag, T, split_fraction = 0.2)
     valid_data = deepSI.System_data_list(sys_data_list=valid_data_list)
 
     return train_data, valid_data
+
+def get_input_codes(idxInput):
+    input_sets = [["TPdef", "PLNONE", "CFNONE", "SONONE", "QU0", "MA1.0"],
+                  ["TPdef", "PL0", "CFNONE", "SONONE", "QU0", "MA1.0"],
+                  ["TPdef", "PLNONE", "CF2000-0500", "SONONE", "QU0", "MA1.0"],
+                  ["TPdef", "PLNONE", "CFNONE", "SO12", "QU0", "MA1.0"],
+                  ["TPdef", "PLNONE", "CFNONE", "SO3", "QU0", "MA1.0"],
+                  ["TPdef", "PLNONE", "CFNONE", "SONONE", "QU2", "MA1.0"],
+                  ["TPdef", "PLNONE", "CFNONE", "SONONE", "QU3", "MA1.0"],
+                  ["TPdef", "PLNONE", "CFNONE", "SONONE", "QU0", "MA0.8"],
+                  ["TP015", "PLNONE", "CFNONE", "SONONE", "QU2", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SONONE", "QU3", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SO12", "QU2", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SO3", "QU2", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SO12", "QU3", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SO3", "QU3", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SONONE", "QU2", "MA0.8"],
+                  ["TP035", "PLNONE", "CFNONE", "SONONE", "QU3", "MA0.8"],
+                  ["TP035", "PL0", "CFNONE", "SO3", "QU3", "MA0.8"],
+                  ["TP035", "PLNONE", "CF2000-0500", "SO3", "QU3", "MA0.8"]]
+
+    input = input_sets[int(idxInput)]
+    inputMulti = input
+
+    if input[0] == "TPdef":
+        inputMulti[0] = 0.15
+    elif input[0] == "TP015":
+        inputMulti[0] = 1.5
+    else:
+        inputMulti[0] = 3.5
+
+    if input[1] == "PLNONE":
+        inputMulti[1] = 0
+    else:
+        inputMulti[1] = 1
+
+    if input[2] == "CFNONE":
+        inputMulti[2] = 0
+    else:
+        inputMulti[2] = 1
+
+    if input[3] == "SONONE":
+        inputMulti[3] = 0
+    elif input[3] == "SO12":
+        inputMulti[3] = 1
+    else:
+        inputMulti[3] = 2
+
+    if input[4] == "QU0":
+        inputMulti[4] = 0
+    elif input[4] == "QU2":
+        inputMulti[4] = 2
+    else:
+        inputMulti[4] = 3
+
+    if input[5] == "MA1.0":
+        inputMulti[5] = 1
+    else:
+        inputMulti[5] = 0.8
+
+    return inputMulti
 
 

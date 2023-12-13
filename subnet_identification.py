@@ -5,19 +5,20 @@ from utils import *
 from matplotlib import pyplot as plt
 
 # Hyperparameters
-T = 50
+T = 60
 epochs = 100
-batch_size = 512
-hl_enc = 3
-n_nodes_enc = 64
+batch_size = 256
+hl_enc = 1
+n_nodes_enc = 128
 hl_din = 2
 n_nodes_din = 64
-activation = nn.Tanh
-nx = 16
+activation_enc = nn.ReLU
+activation_din = nn.Tanh
+nx = 16  # nx=12 would be better, because the change of hospitalized people can be described with 6 states
 all_lag = 30
 na = all_lag
 nb = all_lag
-nu = 1
+nu = 6
 ny = 1
 learning_rate = 1e-3
 
@@ -30,9 +31,9 @@ train_data_folders = os.path.join(CurrDir, TrainDataFolderName)
 valid_data_folders = os.path.join(CurrDir, ValidDataFolderName)
 test_data_folders = os.path.join(CurrDir, TestDataFolderName)
 
-train = create_sysdata_from_file(train_data_folders)
-valid = create_sysdata_from_file(valid_data_folders)
-testdata = create_sysdata_from_file(test_data_folders)
+train = create_sysdata_from_file(train_data_folders, nu, out="normal")
+valid = create_sysdata_from_file(valid_data_folders, nu, out="normal")
+testdata = create_sysdata_from_file(test_data_folders, nu, out="normal")
 
 # Initialization:
 e_net = deepSI.fit_systems.encoders.default_encoder_net
@@ -40,13 +41,13 @@ f_net = deepSI.fit_systems.encoders.default_state_net
 h_net = deepSI.fit_systems.encoders.default_output_net
 
 fitsys = deepSI.fit_systems.SS_encoder_general(nx=nx, na=na, nb=nb, e_net=e_net, f_net=f_net, h_net=h_net,
-                                               e_net_kwargs=dict(n_nodes_per_layer=n_nodes_enc, n_hidden_layers=hl_enc, activation=activation),
-                                               f_net_kwargs=dict(n_nodes_per_layer=n_nodes_din, n_hidden_layers=hl_din, activation=activation),
-                                               h_net_kwargs=dict(n_nodes_per_layer=n_nodes_din, n_hidden_layers=hl_din, activation=activation))
+                                               e_net_kwargs=dict(n_nodes_per_layer=n_nodes_enc, n_hidden_layers=hl_enc, activation=activation_enc),
+                                               f_net_kwargs=dict(n_nodes_per_layer=n_nodes_din, n_hidden_layers=hl_din, activation=activation_din),
+                                               h_net_kwargs=dict(n_nodes_per_layer=n_nodes_din, n_hidden_layers=hl_din, activation=activation_din))
 
 # Training:
 fitsys.fit(train_sys_data=train, val_sys_data=valid, epochs=epochs, batch_size=batch_size, loss_kwargs=dict(nf=T),
-           auto_fit_norm=True, optimizer_kwargs=dict(lr=learning_rate), validation_measure='30-step-NRMS')  #ToDo: ask for prediction hotizon
+           auto_fit_norm=True, optimizer_kwargs=dict(lr=learning_rate), validation_measure='60-step-NRMS')
 
 # Training losses
 fitsys.checkpoint_load_system(name='_last')
@@ -89,7 +90,8 @@ encoder_data = {
     "Nodes per layer (h+f)": n_nodes_din,
     "n_hidden_layers_e": hl_enc,
     "n_nodes_per_layer_e": n_nodes_enc,
-    "activation function": str(activation),
+    "encoder activation fun.": str(activation_enc),
+    "h-f activation fun.": str(activation_din),
     "nf": all_lag,
     "ny": ny,
     "nu": nu,

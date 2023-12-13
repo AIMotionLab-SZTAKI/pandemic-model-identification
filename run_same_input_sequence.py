@@ -6,14 +6,15 @@ import csv
 
 
 def get_results(resultArray):
-    nHospitalied = []
+    output = []
     for result in resultArray:
         hosp = result[6] + result[7]  # hospitalized people + more severe hospitalized people
-        nHospitalied.append(hosp)
-    return nHospitalied
+        death = result[10]
+        output.append([hosp, death])
+    return output
 
 
-def get_rnd_runoptions(input_sets, mode):
+def generate_rnd_inputs(input_sets, mode, nDays, constPeriod):
     if mode == "strict":
         lower = 13
         upper = 17
@@ -26,8 +27,20 @@ def get_rnd_runoptions(input_sets, mode):
     else:
         lower = 0
         upper = 17
+    day_counter = 0
+    input_idx = []
+    input_codes = []
     rnd = random.randint(lower, upper)
-    return rnd, input_sets[rnd]
+    inp = input_sets[rnd]
+    for i in range(nDays):
+        input_idx.append(rnd)
+        input_codes.append(inp)
+        day_counter += 1
+        if day_counter == constPeriod:
+            rnd = random.randint(lower, upper)
+            inp = input_sets[rnd]
+            day_counter = 0
+    return input_idx, input_codes
 
 def write_aggregated(strFolder, inputs, outputs):
     file_input = os.path.join(strFolder, "aggreg_inputs.csv")
@@ -39,6 +52,10 @@ def write_aggregated(strFolder, inputs, outputs):
         writer = csv.writer(myfile)
         writer.writerows(outputs)
 
+def write_multi(output, outputPath):
+    with open(outputPath, 'w') as myfile:
+        writer = csv.writer(myfile)
+        writer.writerows(output)
 
 def write_single(results, filename):  # writer in case of Single Input or Single Output cases
     with open(filename, 'w') as myfile:
@@ -77,55 +94,40 @@ input_sets = [["TPdef", "PLNONE", "CFNONE", "SONONE", "QU0", "MA1.0"],
               ["TP035", "PL0", "CFNONE", "SO3", "QU3", "MA0.8"],
               ["TP035", "PLNONE", "CF2000-0500", "SO3", "QU3", "MA0.8"]]
 
-debug = 0
-nSimulations = 1
+nSimulations = 5
 CONSTANT_PERIOD = 7  # run every input for 7 days
 ENDTIME = 250  # days
-MODE = "moderate"  # "normal" - randomized inputs,
+MODE = "normal"  # "normal" - randomized inputs,
 #               "strict" - inputs between 13-17,
 #               "loose" - inputs between 0-4
 #               "moderate" - inputs between 5-12
 
-for idxRun in range(nSimulations):
-    # initialization
-    simulator.initSimulation(init_options)
-    input_idx, run_options = get_rnd_runoptions(input_sets, MODE)
+input_idx, input_names = generate_rnd_inputs(input_sets, MODE, ENDTIME, CONSTANT_PERIOD)
 
+for idxRun in range(nSimulations):
     # Datafolder structure
     now = datetime.now()
     strNow = now.strftime("%Y_%m_%d_%H%M%S")
-    strFolder = "SimData/Randomized_inputs_" + strNow
+    strFolder = f"RndSequence/Input_sequence_nr{idxRun}_" + strNow
 
+    simulator.initSimulation(init_options)
     results_agg = []
-    inputs_agg = []
-    run_options_agg = []
-    day_counter = 0
     for i in range(0, ENDTIME):
-        results = simulator.runForDay(run_options)
-        day_counter += 1
-        if day_counter == CONSTANT_PERIOD:
-            input_idx, run_options = get_rnd_runoptions(input_sets, MODE)
-            day_counter = 0
+        results = simulator.runForDay(input_names[i])
         results_agg.append(results)
-        inputs_agg.append(input_idx)
-        run_options_agg.append(run_options)
 
     print(f"Simulation number {idxRun + 1} finished...")
 
-    nHospitalized = get_results(results_agg)
+    output = get_results(results_agg)
 
     # Saving the results
-    currentDir = os.getcwd()
-    os.mkdir(strFolder)
+    os.makedirs(strFolder)
 
     strInputPath = os.path.join(strFolder, "input.csv")
     strOutputPath = os.path.join(strFolder, "output.csv")
 
-    write_single(inputs_agg, strInputPath)
-    write_single(nHospitalized, strOutputPath)
-
-    if debug:
-        write_aggregated(strFolder, run_options_agg, results_agg)
+    write_single(input_idx, strInputPath)
+    write_multi(output, strOutputPath)
 
     print(f"Results saved into {strFolder} directory.")
 
