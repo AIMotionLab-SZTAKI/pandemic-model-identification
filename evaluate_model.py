@@ -17,4 +17,7 @@ testdata = create_sysdata_from_file(test_data_folders, nu, out="normal")
 fitsys = deepSI.load_system(f"EncoderData/{encoder_id}/best.pt")
 test_results = fitsys.apply_experiment(testdata, save_state=True)
 
-plot_SISO_results(test_results, testdata, blockfig=True)
+if nu == 1:
+    plot_SISO_results(test_results, testdata, blockfig=True)
+else:
+    plot_MISO(test_results, testdata, blockfig=True)

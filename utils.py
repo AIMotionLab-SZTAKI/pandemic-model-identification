@@ -50,7 +50,7 @@ def csv_write(data, folder, path_parts=[], timeseries=False):
         else:
             np.savetxt(out_file, data, delimiter=",")
 
-def create_sysdata_from_file(data_folders, Nu=1, out="normal"):
+def create_sysdata_from_file(data_folders, Nu=1):
     """
     Creates system (deepSI) data from time-series data.
 
@@ -60,18 +60,12 @@ def create_sysdata_from_file(data_folders, Nu=1, out="normal"):
         - system_data (deepSI.system_data): training data
     """
 
-    if (Nu == 1) and (out == "normal"):
+    if Nu == 1:
         input_filename = 'input.csv'
         output_filename = 'output.csv'
-    elif (Nu == 1) and (out != "normal"):
-        input_filename = 'inputTrimmed.csv'
-        output_filename = 'outputTrimmed.csv'
-    elif (Nu != 1) and (out == "normal"):
+    else:
         input_filename = 'inputMulti.csv'
         output_filename = 'output.csv'
-    else:
-        input_filename = 'inputMultiTrimmed.csv'
-        output_filename = 'outputTrimmed.csv'
     input_data = []
     output_data = []
     data_names_list = os.listdir(data_folders)
@@ -124,6 +118,22 @@ def save_encoder(fit_sys, encoder_data, fig_losses):
 def plot_SISO_results(sim_results, test_data, blockfig=False):
     fig, axs = plt.subplots(2, 1, sharex=True)
     axs[0].plot(test_data.u)
+    axs[0].set_ylabel('Input')
+
+    axs[1].plot(test_data.y, label="PanSim")
+    axs[1].plot(sim_results.y, label="SUBNET")
+    axs[1].set_xlabel('Sim. index')
+    axs[1].set_ylabel('Hospitalized people')
+    axs[1].legend()
+
+    fig.tight_layout()
+    plt.show(block=blockfig)
+
+def plot_MISO(sim_results, test_data, blockfig=False):
+    inputs = get_inv_input_code(test_data.u)
+
+    fig, axs = plt.subplots(2, 1, sharex=True)
+    axs[0].plot(inputs)
     axs[0].set_ylabel('Input')
 
     axs[1].plot(test_data.y, label="PanSim")
@@ -276,4 +286,65 @@ def get_input_codes(idxInput):
 
     return inputMulti
 
+def get_inv_input_code(Inputs):
+    input_sets = [["TPdef", "PLNONE", "CFNONE", "SONONE", "QU0", "MA1.0"],
+                  ["TPdef", "PL0", "CFNONE", "SONONE", "QU0", "MA1.0"],
+                  ["TPdef", "PLNONE", "CF2000-0500", "SONONE", "QU0", "MA1.0"],
+                  ["TPdef", "PLNONE", "CFNONE", "SO12", "QU0", "MA1.0"],
+                  ["TPdef", "PLNONE", "CFNONE", "SO3", "QU0", "MA1.0"],
+                  ["TPdef", "PLNONE", "CFNONE", "SONONE", "QU2", "MA1.0"],
+                  ["TPdef", "PLNONE", "CFNONE", "SONONE", "QU3", "MA1.0"],
+                  ["TPdef", "PLNONE", "CFNONE", "SONONE", "QU0", "MA0.8"],
+                  ["TP015", "PLNONE", "CFNONE", "SONONE", "QU2", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SONONE", "QU3", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SO12", "QU2", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SO3", "QU2", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SO12", "QU3", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SO3", "QU3", "MA1.0"],
+                  ["TP015", "PLNONE", "CFNONE", "SONONE", "QU2", "MA0.8"],
+                  ["TP035", "PLNONE", "CFNONE", "SONONE", "QU3", "MA0.8"],
+                  ["TP035", "PL0", "CFNONE", "SO3", "QU3", "MA0.8"],
+                  ["TP035", "PLNONE", "CF2000-0500", "SO3", "QU3", "MA0.8"]]
+    idxInputs = []
+    for Input in Inputs:
+        strInput = ["", "", "", "", "", ""]
 
+        if Input[0] == 0.15:
+            strInput[0] = "TPdef"
+        elif Input[0] == 1.5:
+            strInput[0] = "TP015"
+        else:
+            strInput[0] = "TP035"
+
+        if Input[1] == 0:
+            strInput[1] = "PLNONE"
+        else:
+            strInput[1] = "PL0"
+
+        if Input[2] == 0:
+            strInput[2] = "CFNONE"
+        else:
+            strInput[2] = "CF2000-0500"
+
+        if Input[3] == 0:
+            strInput[3] = "SONONE"
+        elif Input[3] == 1:
+            strInput[3] = "SO12"
+        else:
+            strInput[3] = "SO3"
+
+        if Input[4] == 0:
+            strInput[4] = "QU0"
+        elif Input[4] == 2:
+            strInput[4] = "QU2"
+        else:
+            strInput[4] = "QU3"
+
+        if Input[5] == 0.8:
+            strInput[5] = "MA0.8"
+        else:
+            strInput[5] = "MA1.0"
+
+        idx = input_sets.index(strInput)
+        idxInputs.append(idx)
+    return idxInputs

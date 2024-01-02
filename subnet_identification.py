@@ -8,11 +8,11 @@ from matplotlib import pyplot as plt
 T = 60
 epochs = 100
 batch_size = 256
-hl_enc = 1
-n_nodes_enc = 128
+hl_enc = 2
+n_nodes_enc = 16
 hl_din = 2
 n_nodes_din = 64
-activation_enc = nn.ReLU
+activation_enc = nn.Tanh
 activation_din = nn.Tanh
 nx = 16  # nx=12 would be better, because the change of hospitalized people can be described with 6 states
 all_lag = 30
@@ -31,9 +31,9 @@ train_data_folders = os.path.join(CurrDir, TrainDataFolderName)
 valid_data_folders = os.path.join(CurrDir, ValidDataFolderName)
 test_data_folders = os.path.join(CurrDir, TestDataFolderName)
 
-train = create_sysdata_from_file(train_data_folders, nu, out="normal")
-valid = create_sysdata_from_file(valid_data_folders, nu, out="normal")
-testdata = create_sysdata_from_file(test_data_folders, nu, out="normal")
+train = create_sysdata_from_file(train_data_folders, nu)
+valid = create_sysdata_from_file(valid_data_folders, nu)
+testdata = create_sysdata_from_file(test_data_folders, nu)
 
 # Initialization:
 e_net = deepSI.fit_systems.encoders.default_encoder_net
