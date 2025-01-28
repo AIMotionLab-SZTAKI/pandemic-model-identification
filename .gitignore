@@ -1,0 +1,9 @@
+*__pycache__*
+.idea
+figures/*
+load_subnet_mdl/*
+venv
+misc/
+# temporarily ignore these files
+Identification/EncoderData/*
+Identification/SimData/*

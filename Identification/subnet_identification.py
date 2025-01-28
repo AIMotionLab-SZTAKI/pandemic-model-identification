@@ -8,11 +8,11 @@ from matplotlib import pyplot as plt
 T = 60
 epochs = 100
 batch_size = 256
-hl_enc = 2
-n_nodes_enc = 16
+hl_enc = 1
+n_nodes_enc = 64
 hl_din = 2
 n_nodes_din = 64
-activation_enc = nn.Tanh
+activation_enc = nn.ReLU
 activation_din = nn.Tanh
 nx = 16  # nx=12 would be better, because the change of hospitalized people can be described with 6 states
 all_lag = 30
