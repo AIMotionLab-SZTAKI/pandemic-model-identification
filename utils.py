@@ -50,6 +50,14 @@ def csv_write(data, folder, path_parts=[], timeseries=False):
         else:
             np.savetxt(out_file, data, delimiter=",")
 
+
+def write_single(results, filename):
+    # writer in case of Single Input or Single Output cases
+    with open(filename, 'w') as myfile:
+        writer = csv.writer(myfile)
+        for result in results:
+            writer.writerow([result])
+
 def create_sysdata_from_file(data_folders, Nu=1):
     """
     Creates system (deepSI) data from time-series data.
@@ -82,7 +90,7 @@ def create_sysdata_from_file(data_folders, Nu=1):
     system_data = deepSI.System_data_list(sys_data_list=sys_data_list)
     return system_data
 
-def save_encoder(fit_sys, encoder_data, fig_losses):
+def save_encoder(fit_sys, fig_losses, encoder_data=None):
     """
     Saves the SUBNET-encoder.
 
@@ -107,11 +115,12 @@ def save_encoder(fit_sys, encoder_data, fig_losses):
 
     fig_losses.savefig(new_sys_folder + '/losses.png', bbox_inches='tight')
 
-    header = 'Training properties: \n'
-    with open(new_sys_folder + '/info.txt', 'w') as f:
-        f.write(header)
-        for key, value in encoder_data.items():
-            f.write('%s: %s\n' % (key, value))
+    if encoder_data is not None:
+        header = 'Training properties: \n'
+        with open(new_sys_folder + '/info.txt', 'w') as f:
+            f.write(header)
+            for key, value in encoder_data.items():
+                f.write('%s: %s\n' % (key, value))
 
     print("---------- Encoder saved ----------")
 
@@ -348,3 +357,32 @@ def get_inv_input_code(Inputs):
         idx = input_sets.index(strInput)
         idxInputs.append(idx)
     return idxInputs
+
+
+def create_refined_sysdata(data_folders):
+    """
+    Creates system (deepSI) data from time-series data.
+
+    Arguments:
+        - data_folders (string): path direction of the time-series data file
+    Returns:
+        - system_data (deepSI.system_data): training data
+    """
+
+    input_filename = 'input.txt'
+    output_filename = 'output.txt'
+    input_data = []
+    output_data = []
+    data_names_list = os.listdir(data_folders)
+    for name in data_names_list:
+        folder = os.path.join(data_folders, name)
+        input_data.append(csv_read(folder, [input_filename]))
+        output_data.append(csv_read(folder, [output_filename]))
+
+    sys_data_list = []
+    for input, output in zip(input_data, output_data):
+            sys_data_part = deepSI.System_data(u=input, y=output)
+            sys_data_list.append(sys_data_part)
+
+    system_data = deepSI.System_data_list(sys_data_list=sys_data_list)
+    return system_data
