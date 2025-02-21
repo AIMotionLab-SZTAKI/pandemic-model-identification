@@ -14,5 +14,5 @@ source venv/bin/activate
 ```
 Then, before running the identification scripts, install [deepSI](https://github.com/MaartenSchoukens/deepSI) (⚠️the implementation currently uses the legacy version⚠️):
 ```bash
-pip install git+https://github.com/GerbenBeintema/deepSI@legacy
+pip install git+https://github.com/MaartenSchoukens/deepSI@legacy
 ```
